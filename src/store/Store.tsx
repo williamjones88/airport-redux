@@ -1,5 +1,6 @@
 import { configureStore, ThunkAction, Action } from '@reduxjs/toolkit';
 import googleMapReducer from '../components/googleMap/googleMapSlice';
+import searchReducer from '../components/search/searchSlice';
 // import notificationsReducer from "../features/notifications/notificationsSlice"
 
 // export const store = configureStore({
@@ -10,7 +11,7 @@ import googleMapReducer from '../components/googleMap/googleMapSlice';
 
 export const store = configureStore({
     reducer: {
-        // searchBar: searchReducer,
+        search: searchReducer,
         googleMap: googleMapReducer,
     }
 })
