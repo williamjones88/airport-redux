@@ -1,13 +1,29 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Grid from '@mui/material/Grid'
 import Autocomplete from '@mui/material/Autocomplete';
-import { Button } from '@mui/material';
+import { Button, CardContent } from '@mui/material';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import Stack from '@mui/material/Stack';
-import { useSelector } from 'react-redux';
-import { getAirports1, getAirports2 } from './searchSlice';
-// import { getAirports } from '../api/airports'
+import { useSelector, useDispatch } from 'react-redux';
+import Snackbar from '@mui/material/Snackbar';
+import Card from '@mui/material/Card';
+import LinearProgress from '@mui/material/LinearProgress';
+import Slide, { SlideProps } from '@mui/material/Slide';
+
+import {
+    getAirports1,
+    getAirports2,
+    asyncSearchAirports1,
+    asyncSearchAirports2
+} from './searchSlice';
+import {
+    getAirport1,
+    getAirport2,
+    updateAirport1,
+    updateAirport2
+} from '../googleMap/googleMapSlice';
+
+import { debounce } from 'lodash';
 
 declare interface airportInterface {
     label: string,
@@ -16,39 +32,48 @@ declare interface airportInterface {
 };
 type NullableAirport = airportInterface | null;
 
+type TransitionProps = Omit<SlideProps, 'direction'>;
 
 const Search = () => {
 
     let initAirports: Array<NullableAirport> = [];
 
-    const airports1 : Array<airportInterface> = useSelector(getAirports1) || [];
-    const airports2 : Array<airportInterface> = useSelector(getAirports2) || [];
+    const airports1: Array<NullableAirport> = useSelector(getAirports1) || [];
+    const airports2: Array<NullableAirport> = useSelector(getAirports2) || [];
+    const airport1: NullableAirport = useSelector(getAirport1);
+    const airport2: NullableAirport = useSelector(getAirport2);
 
 
     const [distance, setDistance] = useState(0);
-    const [keyword, setKeyword] = useState('');
-    // const [airports1, setAirports1] = useState(initAirports);
-    // const [airports2, setAirports2] = useState(initAirports);
+
+    const dispatch: any = useDispatch();
 
     let init: NullableAirport = { label: '', lon: '0', lat: '0' }
 
-    const [airport1, setAirport1] = useState(init);
-    const [airport2, setAirport2] = useState(init);
     const [val1, setVal1] = useState('');
     const [val2, setVal2] = useState('');
+    const [snackBar, setSnackBar] = useState(false);
+    const [transition, setTransition] = React.useState<
+    React.ComponentType<TransitionProps> | undefined
+  >(undefined);
 
-    // useEffect(() => {
-    //     if (airports1.length !== 0 && airports2.length !== 0) {
-    //         drawCurve();
-    //     }
-    // }, [airports1, airports2])
+    function TransitionLeft(props: TransitionProps) {
+        return <Slide {...props} direction="left" />;
+      }
+
+    const handleClose = () => {
+        setSnackBar(false);
+    }
 
     const calDistance = () => {
 
         if (airport1.label === '' && airport2.label === '') {
             //notificatoins
+            setTransition(() => TransitionLeft);
+            setSnackBar(true);
             return;
         }
+
         let lon1 = Number.parseFloat(airport1.lon.valueOf());
         let lon2 = Number.parseFloat(airport2.lon.valueOf());
         let lat1 = Number.parseFloat(airport1.lat.valueOf());
@@ -62,23 +87,26 @@ const Search = () => {
         return setDistance(12742 * Math.asin(Math.sqrt(a))); // 2 * R; R = 6371 km
     }
 
-    // const drawCurve = () => {
-
-    // }
-
-    const handleChange1 = (e: any, v: NullableAirport, r: string) => {
-        console.log('log', v);
-        if (v !== null) {
-            setAirport1(v);
-        }
+    const handleSearch1 = (e: React.SyntheticEvent, v: string, r: string) => {
+        setVal1(v);
+        dispatch(asyncSearchAirports1(v));
     }
 
-    const handleChange2 = (e: any, v: NullableAirport, r: string) => {
-        console.log('log', v);
-        if (v !== null) {
-            setAirport2(v);
-        }
+    const handleSearch2 = async (e: React.SyntheticEvent, v: string, r: string) => {
+        setVal2(v);
+        dispatch(asyncSearchAirports2(v));
     }
+
+    const handelChange1 = (e: React.SyntheticEvent, v: NullableAirport, r: string) => {
+        dispatch(updateAirport1(v));
+    }
+
+    const handelChange2 = (e: React.SyntheticEvent, v: NullableAirport, r: string) => {
+        dispatch(updateAirport2(v));
+    }
+
+    const handelSearchDebounced1 = debounce(handleSearch1, 500);
+    const handelSearchDebounced2 = debounce(handleSearch2, 500);
 
     return (
         <Grid container padding={1} spacing={2}>
@@ -89,15 +117,9 @@ const Search = () => {
                     sx={{ width: '100%' }}
                     options={airports1}
                     value={airport1}
+                    onChange={(e: React.SyntheticEvent, v: NullableAirport, r: string) => handelChange1(e, v, r)}
                     renderInput={(params) => <TextField {...params} />}
-                    inputValue={val1.valueOf()}
-                    onChange={(e: any, v: NullableAirport, r: string) => handleChange1(e, v, r)}
-                    onInputChange={async (event, newInputValue) => {
-                        setVal1(newInputValue);
-                        // let airports : Array<NullableAirport> = await getAirports(newInputValue);
-                        // setAirports1([...airports]);
-                        // console.log('airports', airports);
-                    }}
+                    onInputChange={handelSearchDebounced1}
                 />
             </Grid>
             <Grid item xs={12} md={4}>
@@ -106,16 +128,10 @@ const Search = () => {
                     id="combo-box-demo2"
                     sx={{ width: '100%' }}
                     value={airport2}
+                    onChange={(e: React.SyntheticEvent, v: NullableAirport, r: string) => handelChange2(e, v, r)}
                     options={airports2}
                     renderInput={(params) => <TextField {...params} />}
-                    inputValue={val2.valueOf()}
-                    onChange={(e: any, v: NullableAirport, r: string) => handleChange2(e, v, r)}
-                    onInputChange={async (event, newInputValue) => {
-                        setVal2(newInputValue);
-                        // let airports : Array<NullableAirport> = await getAirports(newInputValue);
-                        // console.log('airports', airports);
-                        // setAirports2([...airports]);
-                    }}
+                    onInputChange={handelSearchDebounced2}
                 />
             </Grid>
             <Grid item xs={6} md={2} container alignContent="center" justifyContent="center">
@@ -127,6 +143,22 @@ const Search = () => {
                 <Typography>
                     {distance.toFixed(5)} nmi
                 </Typography>
+            </Grid>
+            <Grid>
+                <Snackbar
+                    open={snackBar}
+                    autoHideDuration={6000}
+                    onClose={handleClose}
+                    anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                    TransitionComponent={transition}
+                >
+                    <Card>
+                        <CardContent>
+                            Please select two airports
+                        </CardContent>
+                        <LinearProgress color="inherit" />
+                    </Card>
+                </Snackbar>
             </Grid>
         </Grid>
     )

@@ -28,13 +28,21 @@ const googleMapSlice = createSlice({
         test(state) {
             window.alert('google map slice');
         },
+        updateAirport1 (state, action) {
+            state.airport1 = {...action.payload};
+        },
+        updateAirport2 (state, action) {
+            state.airport2 = {...action.payload};
+        }
     },
     extraReducers(builder) {
         builder.addCase(renderGoogleMap.fulfilled, (state, action) => {
-
+            
         })
     }
 })
+
+export const { updateAirport1, updateAirport2 } = googleMapSlice.actions; 
 
 export const getAirport1 = (state: RootState) => state.googleMap.airport1;
 export const getAirport2 = (state: RootState) => state.googleMap.airport2;
