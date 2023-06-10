@@ -8,7 +8,6 @@ import { RootState } from '../../store/Store';
 
 export const asyncSearchAirports1 = createAsyncThunk('search/airports1', async (keyword : string) => {
     const response = await searchAirprots(keyword);
-    console.log('search result', response);
     return [...response];
 })
 export const asyncSearchAirports2 = createAsyncThunk('search/airports2', async (keyword : string) => {

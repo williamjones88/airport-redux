@@ -50,8 +50,6 @@ const Search = () => {
 
     let init: NullableAirport = { label: '', lon: '0', lat: '0' }
 
-    const [val1, setVal1] = useState('');
-    const [val2, setVal2] = useState('');
     const [snackBar, setSnackBar] = useState(false);
     const [transition, setTransition] = React.useState<
     React.ComponentType<TransitionProps> | undefined
@@ -67,7 +65,7 @@ const Search = () => {
 
     const calDistance = () => {
 
-        if (airport1.label === '' && airport2.label === '') {
+        if (airport1.label === '' ||  airport2.label === '') {
             //notificatoins
             setTransition(() => TransitionLeft);
             setSnackBar(true);
@@ -88,20 +86,25 @@ const Search = () => {
     }
 
     const handleSearch1 = (e: React.SyntheticEvent, v: string, r: string) => {
-        setVal1(v);
+        if (v === '') {
+            console.log('detected');
+            return '';
+        }
         dispatch(asyncSearchAirports1(v));
     }
 
     const handleSearch2 = async (e: React.SyntheticEvent, v: string, r: string) => {
-        setVal2(v);
+        if (v === '') return ;
         dispatch(asyncSearchAirports2(v));
     }
 
     const handelChange1 = (e: React.SyntheticEvent, v: NullableAirport, r: string) => {
+        if (v?.label === '') return ;
         dispatch(updateAirport1(v));
     }
 
     const handelChange2 = (e: React.SyntheticEvent, v: NullableAirport, r: string) => {
+        if (v?.label === '') return ;
         dispatch(updateAirport2(v));
     }
 
@@ -117,6 +120,13 @@ const Search = () => {
                     sx={{ width: '100%' }}
                     options={airports1}
                     value={airport1}
+                    getOptionLabel={(option) => {
+                        if (option?.label === undefined) {
+                            return '';
+                        } else {
+                            return option?.label;
+                        }
+                    }}
                     onChange={(e: React.SyntheticEvent, v: NullableAirport, r: string) => handelChange1(e, v, r)}
                     renderInput={(params) => <TextField {...params} />}
                     onInputChange={handelSearchDebounced1}
@@ -128,6 +138,13 @@ const Search = () => {
                     id="combo-box-demo2"
                     sx={{ width: '100%' }}
                     value={airport2}
+                    getOptionLabel={(option) => {
+                        if (option?.label === undefined) {
+                            return '';
+                        } else {
+                            return option?.label;
+                        }
+                    }}
                     onChange={(e: React.SyntheticEvent, v: NullableAirport, r: string) => handelChange2(e, v, r)}
                     options={airports2}
                     renderInput={(params) => <TextField {...params} />}
